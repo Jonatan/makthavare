@@ -114,7 +114,7 @@ function check_for_makthavare()
 		$p = get_posts("name=$makthavare&post_type=makthavare");
 		if($p[0]->ID)
 		{
-			echo "<p><b>$makthavare</b> finns och har ID <b>".$p[0]->ID."</b></p>";
+			echo "<p><b>$makthavare</b> finns och har ID <b>".$p[0]->ID."</b>".var_dump(get_post_meta($p[0]->ID, '_riksdagen'))."</p>";
 		}
 	}
 	return $post->post_content;
@@ -198,10 +198,32 @@ function create_makthavare()
 			require_once(ABSPATH . "wp-admin" . '/includes/image.php');
 			$attach_data = wp_generate_attachment_metadata( $attach_id, $destination );
 			wp_update_attachment_metadata( $attach_id,  $attach_data );
-
 			
-			update_post_meta($pid, '_thumbnail_id', $attach_id, TRUE);
-			return $pid;
+			update_post_meta($p_id, '_thumbnail_id', $attach_id, TRUE);
+			
+			
+			// Och nu grejer från riksdagens api
+			
+			if(strpos($makthavare, ' '))
+			{
+				$namnen = explode(' ', $makthavare);
+			}
+			elseif(strpos( $namn, '-'))
+			{
+				$namnen = explode('-', $makthavare);
+			}
+			$count = count($namnen);
+			$fnamn = $namnen[0];
+			$enamn = $namnen[ count($namnen) -1];
+
+			$xml = simplexml_load_file("http://data.riksdagen.se/personlista/?fnamn=$fnamn&enamn=$fnamn&rdlstatus=samtliga&utformat=xml");
+			if($xml)
+			{
+				update_post_meta($p_id, '_riksdagen', $xml->asXML(), TRUE); // Typ såhär alltså
+			}
+			
+			
+			return $p_id;
 		}
 	}
 	return $post->post_content;
